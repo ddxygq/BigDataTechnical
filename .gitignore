@@ -31,3 +31,13 @@
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+BigDataTechnical.iml
+Flink/
+Hadoop/
+Spark/Spark.iml
+Spark/pom.xml
+Spark/src/
+Spark/target/classes/rdd.txt
+Spark/target/generated-sources/
+pom.xml
+"\346\226\260\345\273\272\346\226\207\346\234\254\346\226\207\346\241\243.txt"

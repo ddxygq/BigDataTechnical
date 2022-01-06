@@ -25,7 +25,7 @@ object TransformDemo {
 
     // mapPartitionsWithIndex算子类似于mapPartitions，不过可以获取到分区索引
     rdd.mapPartitionsWithIndex((index, iter) => {
-      iter.map(item => (index, item * 2))
+      iter.map(item => (index, item))
     }).collect().foreach(println)
 
     // flatMap类似于map，将算子扁平处理，一行变多行，类似于sql中的explode
@@ -74,7 +74,60 @@ object TransformDemo {
     // 按照key进行聚合
     rdd.map(item => (item % 3, 1)).reduceByKey( _ + _).collect().foreach(println)
 
+    // 将初始值与每个分区作用于第一个函数，然后把结果和初始值带入第二个函数
+    /**
+      下例中两个函数都做加法。
+      每个分区的数据：
+      (0,1)
+      (1,2)
+      (2,3)
+      (3,4)
+      (3,5)
+      (4,6)
+      (5,7)
+      (6,8)
+      (7,9)
+      (7,10)
 
+      第一个函数，分区内计算规则：
+      先计算每个分区与初始值10的累加值，得：
+      0 11
+      1 12
+      2 13
+      3 19
+      4 16
+      5 17
+      6 18
+      7 29
+
+      这些分区累加结果：135
+
+      第二个函数，分区间计算规则：
+      将初始值10 与 第一个行数的结果做加法，结果是 10 + 135，得145
+      */
+    println(rdd.aggregate(10)((x, y) => x + y, (x, y) => x + y))
+
+    // 当分区内计算规则和分区间计算规则相同时，aggregateByKey 就可以简化为foldByKey
+    println(rdd.fold(10)((x, y) => x + y))
+
+    // 对key-value 型 rdd 进行聚集操作，这里计算每个key的平均值，
+    // 结果：
+    /**
+       (0,6.0)
+       (1,5.5)
+       (2,5.0)
+      */
+    rdd.map(item => (item % 3, item)).combineByKey(item => (item, 1)
+      , (acc: (Int, Int), v) => (acc._1 + v, acc._2 + 1)
+      ,(acc1: (Int, Int), acc2: (Int, Int)) => (acc1._1 + acc2._1, acc1._2 + acc2._2)
+    ).map(item => (item._1, 1.0 * item._2._1 / item._2._2)).collect().foreach(println)
+
+    // 按照Key排序，默认升序
+    rdd.map(item => (item % 3, item)).sortBy(item => item._1).collect().foreach(println)
+    rdd.map(item => (item % 3, item)).sortByKey().collect().foreach(println)
+
+    //
+    rdd.map(item => (item % 3, item)).join(rdd2.map()).collect().foreach(println)
 
 
   }

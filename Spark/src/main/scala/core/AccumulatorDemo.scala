@@ -29,6 +29,7 @@ object AccumulatorDemo {
     sparkContext.register(accu2, "accu2")
     rdd.foreach(item => accu2.add(item))
     println(accu2.value)
+
   }
 
   class WordConcatAccumulator extends AccumulatorV2[Long, String] {

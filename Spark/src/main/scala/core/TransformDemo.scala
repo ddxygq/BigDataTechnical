@@ -126,8 +126,12 @@ object TransformDemo {
     rdd.map(item => (item % 3, item)).sortBy(item => item._1).collect().foreach(println)
     rdd.map(item => (item % 3, item)).sortByKey().collect().foreach(println)
 
-    //
-    rdd.map(item => (item % 3, item)).join(rdd2.map()).collect().foreach(println)
+    // 在类型为(K,V)和(K,W)的 RDD 上调用，返回一个相同 key 对应的所有元素连接在一起的，相当于做了一次笛卡尔积
+    val rdd3 = rdd.map(item => (item % 3, item))
+    val rdd4 = rdd.map(item => (item % 3, item))
+    rdd3.join(rdd4).collect().foreach(println)
+    rdd3.leftOuterJoin(rdd4).collect().foreach(println)
+    rdd3.cogroup(rdd4).collect().foreach(println)
 
 
   }

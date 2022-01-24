@@ -1,7 +1,12 @@
 package wordcount;
 
-import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.api.java.DataSet;
+import org.apache.flink.api.java.ExecutionEnvironment;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.bridge.java.BatchTableEnvironment;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @Author: keguang
@@ -10,29 +15,50 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
  * @description:
  */
 public class SQLDemo {
-    public static void main(String[] args) {
-        StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
-        senv.setParallelism(1);
+    public static void main(String[] args) throws Exception{
 
-        StreamTableEnvironment tableEnv = StreamTableEnvironment.create(senv);
+        ExecutionEnvironment env = ExecutionEnvironment.getExecutionEnvironment();
+        env.setParallelism(1);
+        BatchTableEnvironment tbEnv = BatchTableEnvironment.create(env);
 
-        String words = "hello flink hello lagou";
+        String words = "hello flink hello spark flink";
 
         String[] split = words.split("\\W+");
 
-        ArrayList<WC> list = new ArrayList<>();
-
-
-
+        List<WC> list = new ArrayList<>();
         for(String word : split){
-
             WC wc = new WC(word,1);
-
             list.add(wc);
+        }
+
+        DataSet ds =  env.fromCollection(list);
+        Table table = tbEnv.fromDataSet(ds);
+        table.printSchema();
+        // 注册表
+        tbEnv.createTemporaryView("wordcount", table);
+        Table tableRes = tbEnv.sqlQuery("select word, sum(frequency) as frequency from wordcount group by word");
+        tbEnv.toDataSet(tableRes, WC.class).printToErr();
+
+    }
+
+
+
+    public static class WC {
+
+        public String word;
+        public long frequency;
+
+        public WC() {}
+
+        public WC(String word, long frequency) {
+            this.word = word;
+            this.frequency = frequency;
 
         }
 
-        DataSet<WC> input = fbEnv.fromCollection(list);
-
+        @Override
+        public String toString() {
+            return  word + ", " + frequency;
+        }
     }
 }

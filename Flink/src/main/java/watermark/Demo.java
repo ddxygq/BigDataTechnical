@@ -2,6 +2,8 @@ package watermark;
 
 import com.alibaba.fastjson.JSON;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.TimeCharacteristic;
 import org.apache.flink.streaming.api.datastream.DataStream;
@@ -31,7 +33,7 @@ public class Demo {
                 })).map(item -> {
                     String[] arr = item.split(",");
                     return Tuple2.of((String) JSON.parseObject(arr[8] + arr[8] + arr[8] + arr[8]).get("level"), 1L);
-        });
+        }).returns(TypeInformation.of(new TypeHint<Tuple2<String, Long>>() {}));
         dataStream1.keyBy(0).window(TumblingEventTimeWindows.of(Time.seconds(5))).sum(1).print();
 
         senv.execute();

@@ -19,7 +19,7 @@ public class SourceFromFile extends RichSourceFunction<String> {
                 continue;
             }
             ctx.collect(line);
-            TimeUnit.SECONDS.sleep(10);
+            TimeUnit.SECONDS.sleep(1);
         }
     }
 

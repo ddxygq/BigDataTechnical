@@ -32,36 +32,16 @@ public class Mysq2ClickHouse {
                         " primary key (id) not enforced\n" +
                         ") WITH (\n" +
                         " 'connector' = 'mysql-cdc',\n" +
-                        " 'hostname' = '192.168.20.250',\n" +
+                        " 'hostname' = '192.168.1.2',\n" +
                         " 'port' = '3306',\n" +
                         " 'username' = 'bigdata',\n" +
-                        " 'password' = 'bigdata123',\n" +
-                        " 'database-name' = 'flash_center',\n" +
+                        " 'password' = 'bigdata',\n" +
+                        " 'database-name' = 'bigdata',\n" +
                         " 'table-name' = 'user',\n" +
                         " 'scan.startup.mode' = 'latest-offset'\n" +
                         ")";
 
         tableEnv.executeSql(sourceDDL);
-
-        /*String url = "jdbc:clickhouse://192.168.20.250:8123/test";
-        String userName = "default";
-        String password = "clickhouse";
-        String ckTable = "user";
-        // 输出目标表
-        String sinkDDL =
-                "CREATE TABLE clickhouse_user (\n" +
-                        " id INT NOT NULL,\n" +
-                        " username STRING,\n" +
-                        " primary key (id) not enforced\n" +
-                        ") WITH (\n" +
-                        " 'connector' = 'clickhouse',\n" +
-                        " 'driver' = 'com.mysql.jdbc.Driver',\n" +
-                        " 'url' = '" + url + "',\n" +
-
-                        " 'table-name' = '" + ckTable + "'\n" +
-                        ")";
-
-        tableEnv.executeSql(sinkDDL);*/
 
         String transformDmlSQL =  "select * from mysql_user";
 
@@ -75,7 +55,7 @@ public class Mysq2ClickHouse {
                 super.open(parameters);
                 if(conn == null) {
                     Class.forName("ru.yandex.clickhouse.ClickHouseDriver");
-                    conn = DriverManager.getConnection("jdbc:clickhouse://192.168.20.250:8123/test");
+                    conn = DriverManager.getConnection("jdbc:clickhouse://192.168.1.2:8123/test");
                 }
 
             }

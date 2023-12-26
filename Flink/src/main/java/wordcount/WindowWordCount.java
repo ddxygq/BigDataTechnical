@@ -1,6 +1,8 @@
 package wordcount;
 
 import org.apache.flink.api.common.functions.FlatMapFunction;
+import org.apache.flink.api.common.typeinfo.TypeHint;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -16,6 +18,9 @@ public class WindowWordCount {
         DataStream<Tuple2<String, Integer>> dataStream = env
                 .socketTextStream("192.168.20.130", 9999)
                 .flatMap(new Splitter())
+                .map(item -> Tuple2.of(item.f0.toUpperCase(), item.f1))
+                // 指定类型
+                .returns(new TypeHint<Tuple2<String, Integer>>() {})
                 .keyBy(value -> value.f0)
                 .window(TumblingProcessingTimeWindows.of(Time.seconds(5)))
                 .sum(1);

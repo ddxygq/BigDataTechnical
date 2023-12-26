@@ -5,6 +5,7 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
+import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 
 /**
@@ -27,7 +28,7 @@ public class WindowFunctionDemo {
                 , new Person("王五", 50));
 
         persons.keyBy(item -> item.getName())
-                .window(TumblingEventTimeWindows.of(Time.milliseconds(5000)))
+                .window(TumblingProcessingTimeWindows.of(Time.milliseconds(1000)))
                 .reduce(new ReduceFunction<Person>() {
                     @Override
                     public Person reduce(Person value1, Person value2) throws Exception {
@@ -37,7 +38,6 @@ public class WindowFunctionDemo {
                 }).print();
 
         senv.execute();
-
         
     }
 }

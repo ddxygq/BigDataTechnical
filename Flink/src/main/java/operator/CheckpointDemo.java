@@ -7,7 +7,7 @@ public class CheckpointDemo {
     public static void main(String[] args) {
         StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // checkpoint间隔，这里配置为10s进行一次，单位是 ms
+        // 开启checkpoint，并且指定间隔，这里配置为10s进行一次，单位是 ms
         senv.enableCheckpointing(10 * 1000);
 
         // checkpoint超时时间，单位ms，超过将被丢弃

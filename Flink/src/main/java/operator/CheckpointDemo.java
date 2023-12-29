@@ -1,5 +1,6 @@
 package operator;
 
+import org.apache.flink.contrib.streaming.state.EmbeddedRocksDBStateBackend;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 public class CheckpointDemo {
@@ -19,6 +20,7 @@ public class CheckpointDemo {
         // 配置checkpoint目录
         senv.getCheckpointConfig().setCheckpointStorage("hdfs:///flink/checkpoints/jobname");
 
-
+        // 设置stateBackend
+        senv.setStateBackend(new EmbeddedRocksDBStateBackend());
     }
 }

@@ -1,12 +1,14 @@
 package window;
 
-import common.Person;
+import org.apache.flink.api.common.functions.AggregateFunction;
+import org.apache.flink.api.common.functions.FlatMapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.util.Collector;
 
 /**
  * 窗口函数
@@ -14,30 +16,79 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 public class WindowFunctionDemo {
 
     public static void main(String[] args) throws Exception {
-        reduceFunctionDemo();
+        // reduceFunctionDemo();
+
+        aggregateFunctionDemo();
     }
 
     public static void reduceFunctionDemo() throws Exception {
         StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
-        DataStream<Person> persons = senv.fromElements(
-                new Person("张三", 30)
-                , new Person("张三", 30)
-                , new Person("李四", 40)
-                , new Person("李四", 40)
-                , new Person("王五", 50)
-                , new Person("王五", 50));
 
-        persons.keyBy(item -> item.getName())
-                .window(TumblingProcessingTimeWindows.of(Time.milliseconds(1000)))
-                .reduce(new ReduceFunction<Person>() {
+        DataStream<Tuple2<String, Integer>> dataStream = senv.socketTextStream("192.168.20.130", 9999)
+                .flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
+
                     @Override
-                    public Person reduce(Person value1, Person value2) throws Exception {
-                        System.out.println(value1);
-                        return new Person(value1.getName(), value1.getAge() + value2.getAge());
+                    public void flatMap(String value, Collector<Tuple2<String, Integer>> out) throws Exception {
+                        String[] values = value.split(" ");
+                        for(String v : values) {
+                            out.collect(Tuple2.of(v, 1));
+                        }
                     }
-                }).print();
+                });
+        dataStream.keyBy(item -> item.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.milliseconds(3000)))
+                .reduce(new ReduceFunction<Tuple2<String, Integer>>() {
+                    @Override
+                    public Tuple2<String, Integer> reduce(Tuple2<String, Integer> value1, Tuple2<String, Integer> value2) throws Exception {
+                        return Tuple2.of(value1.f0, value1.f1 + value2.f1);
+                    }
+                })
+                .print();
 
-        senv.execute();
+        senv.execute("reduceFunctionDemo");
         
+    }
+
+    public static void aggregateFunctionDemo() throws Exception {
+        StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        DataStream<Tuple2<String, Integer>> dataStream = senv.socketTextStream("192.168.20.130", 9999)
+                .flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
+
+                    @Override
+                    public void flatMap(String value, Collector<Tuple2<String, Integer>> out) throws Exception {
+                        String[] values = value.split(" ");
+                        for(String v : values) {
+                            out.collect(Tuple2.of(v, 1));
+                        }
+                    }
+                });
+        dataStream.keyBy(item -> item.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.milliseconds(3000)))
+                .aggregate(new AggregateFunction<Tuple2<String,Integer>, Tuple2<Integer, Integer>, Float>() {
+                    @Override
+                    public Tuple2<Integer, Integer> createAccumulator() {
+                        return new Tuple2<>(0, 0);
+                    }
+
+                    @Override
+                    public Tuple2<Integer, Integer> add(Tuple2<String, Integer> value, Tuple2<Integer, Integer> accumulator) {
+                        return new Tuple2<>(accumulator.f0 + value.f1, accumulator.f1 + 1);
+                    }
+
+                    @Override
+                    public Float getResult(Tuple2<Integer, Integer> accumulator) {
+                        return (float) accumulator.f0 / accumulator.f1;
+                    }
+
+                    @Override
+                    public Tuple2<Integer, Integer> merge(Tuple2<Integer, Integer> a, Tuple2<Integer, Integer> b) {
+                        return new Tuple2<>(a.f0 + b.f0, a.f1 + b.f1);
+                    }
+                })
+                .print();
+
+        senv.execute("aggregateFunctionDemo");
+
     }
 }

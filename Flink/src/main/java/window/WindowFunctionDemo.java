@@ -6,8 +6,10 @@ import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.windowing.ProcessWindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingProcessingTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
+import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
 /**
@@ -18,7 +20,9 @@ public class WindowFunctionDemo {
     public static void main(String[] args) throws Exception {
         // reduceFunctionDemo();
 
-        aggregateFunctionDemo();
+        // aggregateFunctionDemo();
+
+        processWindowFunctionDemo();
     }
 
     public static void reduceFunctionDemo() throws Exception {
@@ -89,6 +93,38 @@ public class WindowFunctionDemo {
                 .print();
 
         senv.execute("aggregateFunctionDemo");
+
+    }
+
+    public static void processWindowFunctionDemo() throws Exception {
+        StreamExecutionEnvironment senv = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        DataStream<Tuple2<String, Integer>> dataStream = senv.socketTextStream("192.168.20.130", 9999)
+                .flatMap(new FlatMapFunction<String, Tuple2<String, Integer>>() {
+
+                    @Override
+                    public void flatMap(String value, Collector<Tuple2<String, Integer>> out) throws Exception {
+                        String[] values = value.split(" ");
+                        for(String v : values) {
+                            out.collect(Tuple2.of(v, 1));
+                        }
+                    }
+                });
+        dataStream.keyBy(item -> item.f0)
+                .window(TumblingProcessingTimeWindows.of(Time.milliseconds(3000)))
+                .process(new ProcessWindowFunction<Tuple2<String,Integer>, String, String, TimeWindow>() {
+                    @Override
+                    public void process(String key, Context context, Iterable<Tuple2<String, Integer>> elements, Collector<String> out) throws Exception {
+                        long count = 0;
+                        for (Tuple2<String, Integer> in: elements) {
+                            count ++;
+                        }
+                        out.collect("key: " + key + ", Window: " + context.window() + ", count: " + count);
+                    }
+                })
+                .print();
+
+        senv.execute("processWindowFunctionDemo");
 
     }
 }
